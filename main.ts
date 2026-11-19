@@ -1,16 +1,25 @@
-// A working news-image entry (Node 22, standard library only): its image is the
-// entry.png beside this file, and the program copies it to /output/entry.png.
-// The image path is resolved from this file's own location, never from the
-// working directory: the grader runs `node /bot/main.ts` from elsewhere.
+// News-image entry: the 18 November 2026 broadsheet, pre-rendered.
+// The program runs with no network, so it ships the image the repository
+// already holds: it reads entry.png from beside this file and writes the
+// same bytes to the output directory. The image is located relative to
+// this file, never relative to the process working directory, because the
+// grader may invoke the program from anywhere.
 //
-// Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
-//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// Local run: mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-mkdirSync(outDir, { recursive: true });
-const src = new URL("./entry.png", import.meta.url);
-if (!existsSync(src)) throw new Error("entry.png is missing beside main.ts");
-copyFileSync(src, join(outDir, "entry.png"));
+function main(): void {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const pixels = readFileSync(join(here, "entry.png"));
+  if (pixels.length === 0) {
+    throw new Error("entry.png beside main.ts is empty");
+  }
+  const target = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
+  mkdirSync(target, { recursive: true });
+  writeFileSync(join(target, "entry.png"), pixels);
+}
+
+main();
